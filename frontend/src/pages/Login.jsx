@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, Brain } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Phone, Lock, Brain } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Login Page Component
@@ -10,9 +11,14 @@ import { Eye, EyeOff, Mail, Lock, Brain } from 'lucide-react';
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    phone: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -21,11 +27,27 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Placeholder for authentication logic
-    console.log('Login attempt:', formData);
-    // Will implement real authentication in Phase 2
+    setError('');
+    setIsLoading(true);
+
+    try {
+      console.log('Attempting login with:', formData);
+      const result = await login(formData);
+      console.log('Login result:', result);
+
+      if (result.success) {
+        navigate('/');
+      } else {
+        setError(result.message);
+      }
+    } catch (error) {
+      console.error('Unexpected error in handleSubmit:', error);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,27 +68,39 @@ const Login = () => {
           </p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+            {error.includes('Invalid phone number or password') && (
+              <div className="mt-2 text-sm">
+                <p>Don't have an account? <Link to="/register" className="underline">Create one here</Link></p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Login Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* Email Field */}
+            {/* Phone Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Phone Number
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Phone className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="phone"
+                  name="phone"
+                  type="tel"
                   required
-                  value={formData.email}
+                  value={formData.phone}
                   onChange={handleChange}
                   className="input-field pl-10"
-                  placeholder="Enter your email"
+                  placeholder="Enter your phone number"
                 />
               </div>
             </div>
@@ -119,9 +153,9 @@ const Login = () => {
               </label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+              <button type="button" className="font-medium text-primary-600 hover:text-primary-500">
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </div>
 
@@ -129,9 +163,10 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign in
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
 
@@ -146,13 +181,6 @@ const Login = () => {
           </div>
         </form>
 
-        {/* Development Note */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-700">
-            <strong>Development Note:</strong> Authentication system will be implemented in Phase 2. 
-            Currently using placeholder forms for UI demonstration.
-          </p>
-        </div>
       </div>
     </div>
   );

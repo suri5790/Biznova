@@ -1,0 +1,197 @@
+import axios from 'axios';
+
+// Create axios instance with base configuration
+const api = axios.create({
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor to handle token expiration
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Auth API calls
+export const authAPI = {
+    // Register user
+    register: async (userData) => {
+        const response = await api.post('/auth/register', userData);
+        return response.data;
+    },
+
+    // Login user
+    login: async (credentials) => {
+        const response = await api.post('/auth/login', credentials);
+        return response.data;
+    },
+
+    // Get user profile
+    getProfile: async () => {
+        const response = await api.get('/auth/profile');
+        return response.data;
+    },
+
+    // Update user profile
+    updateProfile: async (userData) => {
+        const response = await api.put('/auth/profile', userData);
+        return response.data;
+    },
+};
+
+// Sales API calls
+export const salesAPI = {
+    // Get all sales
+    getSales: async () => {
+        const response = await api.get('/sales');
+        return response.data;
+    },
+
+    // Create new sale
+    createSale: async (saleData) => {
+        const response = await api.post('/sales', saleData);
+        return response.data;
+    },
+
+    // Get sale by ID
+    getSaleById: async (id) => {
+        const response = await api.get(`/sales/${id}`);
+        return response.data;
+    },
+
+    // Update sale
+    updateSale: async (id, saleData) => {
+        const response = await api.put(`/sales/${id}`, saleData);
+        return response.data;
+    },
+
+    // Delete sale
+    deleteSale: async (id) => {
+        const response = await api.delete(`/sales/${id}`);
+        return response.data;
+    },
+};
+
+// Expenses API calls
+export const expensesAPI = {
+    // Get all expenses
+    getExpenses: async () => {
+        const response = await api.get('/expenses');
+        return response.data;
+    },
+
+    // Create new expense
+    createExpense: async (expenseData) => {
+        const response = await api.post('/expenses', expenseData);
+        return response.data;
+    },
+
+    // Get expense by ID
+    getExpenseById: async (id) => {
+        const response = await api.get(`/expenses/${id}`);
+        return response.data;
+    },
+
+    // Update expense
+    updateExpense: async (id, expenseData) => {
+        const response = await api.put(`/expenses/${id}`, expenseData);
+        return response.data;
+    },
+
+    // Delete expense
+    deleteExpense: async (id) => {
+        const response = await api.delete(`/expenses/${id}`);
+        return response.data;
+    },
+};
+
+// Inventory API calls
+export const inventoryAPI = {
+    // Get all inventory items
+    getInventory: async () => {
+        const response = await api.get('/inventory');
+        return response.data;
+    },
+
+    // Create new inventory item
+    createInventoryItem: async (itemData) => {
+        const response = await api.post('/inventory', itemData);
+        return response.data;
+    },
+
+    // Get inventory item by ID
+    getInventoryItemById: async (id) => {
+        const response = await api.get(`/inventory/${id}`);
+        return response.data;
+    },
+
+    // Update inventory item
+    updateInventoryItem: async (id, itemData) => {
+        const response = await api.put(`/inventory/${id}`, itemData);
+        return response.data;
+    },
+
+    // Delete inventory item
+    deleteInventoryItem: async (id) => {
+        const response = await api.delete(`/inventory/${id}`);
+        return response.data;
+    },
+};
+
+// Customers API calls
+export const customersAPI = {
+    // Get all customers
+    getCustomers: async () => {
+        const response = await api.get('/customers');
+        return response.data;
+    },
+
+    // Create new customer
+    createCustomer: async (customerData) => {
+        const response = await api.post('/customers', customerData);
+        return response.data;
+    },
+
+    // Get customer by ID
+    getCustomerById: async (id) => {
+        const response = await api.get(`/customers/${id}`);
+        return response.data;
+    },
+
+    // Update customer
+    updateCustomer: async (id, customerData) => {
+        const response = await api.put(`/customers/${id}`, customerData);
+        return response.data;
+    },
+
+    // Delete customer
+    deleteCustomer: async (id) => {
+        const response = await api.delete(`/customers/${id}`);
+        return response.data;
+    },
+};
+
+export default api;

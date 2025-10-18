@@ -1,9 +1,10 @@
 import React from 'react';
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Package, 
-  Users, 
+import { useNavigate } from 'react-router-dom';
+import {
+  TrendingUp,
+  DollarSign,
+  Package,
+  Users,
   Brain,
   BarChart3,
   AlertCircle,
@@ -16,6 +17,27 @@ import {
  * Ready for Phase 2-6 development with real data integration
  */
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleQuickAction = (action) => {
+    switch (action) {
+      case 'sale':
+        navigate('/sales');
+        break;
+      case 'expense':
+        navigate('/expenses');
+        break;
+      case 'inventory':
+        navigate('/inventory');
+        break;
+      case 'customer':
+        navigate('/customers');
+        break;
+      default:
+        break;
+    }
+  };
+
   // Placeholder data - will be replaced with real API calls in Phase 2
   const stats = [
     { name: 'Total Sales', value: '₹0', change: '+0%', changeType: 'positive', icon: TrendingUp },
@@ -60,10 +82,9 @@ const Dashboard = () => {
                       <div className="text-2xl font-semibold text-gray-900">
                         {stat.value}
                       </div>
-                      <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                        stat.changeType === 'positive' ? 'text-green-600' : 
-                        stat.changeType === 'negative' ? 'text-red-600' : 'text-gray-500'
-                      }`}>
+                      <div className={`ml-2 flex items-baseline text-sm font-semibold ${stat.changeType === 'positive' ? 'text-green-600' :
+                          stat.changeType === 'negative' ? 'text-red-600' : 'text-gray-500'
+                        }`}>
                         {stat.change}
                       </div>
                     </dd>
@@ -105,16 +126,28 @@ const Dashboard = () => {
         <div className="card">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full btn-primary text-left">
+            <button
+              onClick={() => handleQuickAction('sale')}
+              className="w-full btn-primary text-left"
+            >
               Record New Sale
             </button>
-            <button className="w-full btn-secondary text-left">
+            <button
+              onClick={() => handleQuickAction('expense')}
+              className="w-full btn-secondary text-left"
+            >
               Add Expense
             </button>
-            <button className="w-full btn-secondary text-left">
+            <button
+              onClick={() => handleQuickAction('inventory')}
+              className="w-full btn-secondary text-left"
+            >
               Update Inventory
             </button>
-            <button className="w-full btn-secondary text-left">
+            <button
+              onClick={() => handleQuickAction('customer')}
+              className="w-full btn-secondary text-left"
+            >
               Add Customer
             </button>
           </div>
@@ -132,13 +165,12 @@ const Dashboard = () => {
         <div className="space-y-3">
           {recentActivities.map((activity) => (
             <div key={activity.id} className="flex items-center space-x-3">
-              <div className={`flex-shrink-0 ${
-                activity.status === 'success' ? 'text-green-500' :
-                activity.status === 'warning' ? 'text-yellow-500' : 'text-blue-500'
-              }`}>
+              <div className={`flex-shrink-0 ${activity.status === 'success' ? 'text-green-500' :
+                  activity.status === 'warning' ? 'text-yellow-500' : 'text-blue-500'
+                }`}>
                 {activity.status === 'success' ? <CheckCircle className="h-5 w-5" /> :
-                 activity.status === 'warning' ? <AlertCircle className="h-5 w-5" /> :
-                 <BarChart3 className="h-5 w-5" />}
+                  activity.status === 'warning' ? <AlertCircle className="h-5 w-5" /> :
+                    <BarChart3 className="h-5 w-5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-900">{activity.message}</p>
