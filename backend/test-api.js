@@ -38,7 +38,7 @@ const testExpense = {
   category: 'Test'
 };
 
-const testInventory = {
+const testInventoryItem = {
   item_name: 'Test Product',
   stock_qty: 10,
   price_per_unit: 50
@@ -196,7 +196,8 @@ async function testInventory() {
   
   // Create inventory item
   console.log('📝 Testing inventory item creation...');
-  const createResult = await apiCall('POST', '/inventory', testInventory, authToken);
+  const createResult = await apiCall('POST', '/inventory', testInventoryItem, authToken);
+  
   if (createResult.success) {
     console.log('✅ Inventory item created successfully');
   } else {

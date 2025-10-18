@@ -40,7 +40,7 @@ const validateRegistration = [
   
   body('upi_id')
     .optional()
-    .matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
+    .matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/)
     .withMessage('Please enter a valid UPI ID')
 ];
 
@@ -79,7 +79,7 @@ const validateProfileUpdate = [
   
   body('upi_id')
     .optional()
-    .matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
+    .matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/)
     .withMessage('Please enter a valid UPI ID')
 ];
 

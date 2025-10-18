@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
   upi_id: {
     type: String,
     trim: true,
-    match: [/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please enter a valid UPI ID']
+    match: [/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/, 'Please enter a valid UPI ID']
   }
 }, {
   timestamps: true,

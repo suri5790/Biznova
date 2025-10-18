@@ -36,8 +36,8 @@ const saleSchema = new mongoose.Schema({
   }],
   total_amount: {
     type: Number,
-    required: [true, 'Total amount is required'],
-    min: [0, 'Total amount cannot be negative']
+     min: [0, 'Total amount cannot be negative'],
+    default: 0
   },
   payment_method: {
     type: String,
