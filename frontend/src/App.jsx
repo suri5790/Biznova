@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import DashboardLayout from './components/DashboardLayout';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Sales from './pages/Sales';
@@ -11,6 +12,7 @@ import Analytics from './pages/Analytics';
 import AI from './pages/AI';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Settings from './pages/Settings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -19,7 +21,7 @@ const ProtectedRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -60,7 +62,7 @@ function App() {
             {/* Protected routes with layout */}
             <Route path="/" element={
               <ProtectedRoute>
-                <Layout />
+              <DashboardLayout />
               </ProtectedRoute>
             }>
               <Route index element={<Dashboard />} />
@@ -70,6 +72,7 @@ function App() {
               <Route path="customers" element={<Customers />} />
               <Route path="ai" element={<AI />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
         </div>
