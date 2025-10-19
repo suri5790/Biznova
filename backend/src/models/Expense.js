@@ -29,6 +29,11 @@ const expenseSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, 'Category cannot exceed 50 characters']
   },
+  is_sales_expense: {
+    type: Boolean,
+    default: false,
+    comment: 'True if this expense is directly related to sales (marketing, commissions, shipping, etc.)'
+  },
   date: {
     type: Date,
     default: Date.now
@@ -50,6 +55,7 @@ expenseSchema.virtual('summary').get(function() {
     amount: this.amount,
     description: this.description,
     category: this.category,
+    is_sales_expense: this.is_sales_expense,
     date: this.date,
     createdAt: this.createdAt
   };

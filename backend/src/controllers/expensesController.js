@@ -101,7 +101,7 @@ const expensesController = {
       }
 
       const userId = req.user._id;
-      const { amount, description, category, date } = req.body;
+      const { amount, description, category, date, is_sales_expense } = req.body;
 
       // Create new expense
       const expense = new Expense({
@@ -109,7 +109,8 @@ const expensesController = {
         amount,
         description,
         category,
-        date: date || new Date()
+        date: date || new Date(),
+        is_sales_expense: is_sales_expense || false
       });
 
       await expense.save();
@@ -145,11 +146,11 @@ const expensesController = {
 
       const { id } = req.params;
       const userId = req.user._id;
-      const { amount, description, category, date } = req.body;
+      const { amount, description, category, date, is_sales_expense } = req.body;
 
       const expense = await Expense.findOneAndUpdate(
         { _id: id, user_id: userId },
-        { amount, description, category, date },
+        { amount, description, category, date, is_sales_expense },
         { new: true, runValidators: true }
       ).populate('user_id', 'name shop_name');
 

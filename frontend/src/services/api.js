@@ -93,6 +93,12 @@ export const salesAPI = {
         const response = await api.delete(`/sales/${id}`);
         return response.data;
     },
+
+    // Get today's sales summary
+    getTodaysSales: async () => {
+        const response = await api.get('/sales/today/summary');
+        return response.data;
+    },
 };
 
 // Expenses API calls
@@ -223,6 +229,51 @@ export const aiAPI = {
     // Generate image
     generateImage: async (imageData) => {
         const response = await api.post('/ai/generate-image', imageData);
+        return response.data;
+    },
+};
+
+// Profit Analytics API calls
+export const profitAnalyticsAPI = {
+    // Get complete profit analysis
+    getProfitAnalysis: async (params = {}) => {
+        const response = await api.get('/profit-analytics', { params });
+        return response.data;
+    },
+
+    // Get sales breakdown with COGS
+    getSalesBreakdown: async (params = {}) => {
+        const response = await api.get('/profit-analytics/sales-breakdown', { params });
+        return response.data;
+    },
+
+    // Get expenses breakdown (sales vs operating)
+    getExpensesBreakdown: async (params = {}) => {
+        const response = await api.get('/profit-analytics/expenses-breakdown', { params });
+        return response.data;
+    },
+
+    // Get inventory status with remaining value
+    getInventoryStatus: async () => {
+        const response = await api.get('/profit-analytics/inventory-status');
+        return response.data;
+    },
+
+    // Get sales vs expenses time series data
+    getTimeSeries: async (params = {}) => {
+        const response = await api.get('/profit-analytics/time-series', { params });
+        return response.data;
+    },
+
+    // Get sales by category
+    getSalesByCategory: async (params = {}) => {
+        const response = await api.get('/profit-analytics/sales-by-category', { params });
+        return response.data;
+    },
+
+    // Get top selling products
+    getTopProducts: async (params = {}) => {
+        const response = await api.get('/profit-analytics/top-products', { params });
         return response.data;
     },
 };

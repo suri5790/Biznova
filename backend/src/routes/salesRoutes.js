@@ -15,6 +15,7 @@ router.use(authenticateToken);
 // Sales routes
 router.get('/', salesController.getAllSales);
 router.get('/analytics', salesController.getSalesAnalytics);
+router.get('/today/summary', salesController.getTodaysSales);
 router.get('/:id', salesController.getSalesById);
 router.post('/', validateSale, salesController.createSales);
 router.put('/:id', validateSale, salesController.updateSales);

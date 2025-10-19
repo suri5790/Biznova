@@ -99,7 +99,7 @@ const inventoryController = {
       }
 
       const userId = req.user._id;
-      const { item_name, stock_qty, price_per_unit } = req.body;
+      const { item_name, stock_qty, price_per_unit, min_stock_level, category, description } = req.body;
 
       // Check if item already exists for this user
       const existingItem = await Inventory.findOne({ 
@@ -120,7 +120,10 @@ const inventoryController = {
         user_id: userId,
         item_name,
         stock_qty,
-        price_per_unit
+        price_per_unit,
+        min_stock_level: min_stock_level || 5,
+        category: category || 'Other',
+        description: description || ''
       });
 
       await item.save();
@@ -156,11 +159,11 @@ const inventoryController = {
 
       const { id } = req.params;
       const userId = req.user._id;
-      const { item_name, stock_qty, price_per_unit } = req.body;
+      const { item_name, stock_qty, price_per_unit, min_stock_level, category, description } = req.body;
 
       const item = await Inventory.findOneAndUpdate(
         { _id: id, user_id: userId },
-        { item_name, stock_qty, price_per_unit },
+        { item_name, stock_qty, price_per_unit, min_stock_level, category, description },
         { new: true, runValidators: true }
       ).populate('user_id', 'name shop_name');
 

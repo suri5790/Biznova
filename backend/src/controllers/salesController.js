@@ -1,4 +1,5 @@
 const Sale = require('../models/Sale');
+const Inventory = require('../models/Inventory');
 const { validationResult } = require('express-validator');
 
 /**
@@ -101,22 +102,73 @@ const salesController = {
       }
 
       const userId = req.user._id;
-      const { items, payment_method, date } = req.body;
+      const { items, payment_method, date, customer_name, customer_phone } = req.body;
+
+      // Validate and prepare items with cost prices from inventory
+      const saleItems = [];
+      for (const item of items) {
+        // Find inventory item
+        const inventoryItem = await Inventory.findOne({
+          user_id: userId,
+          item_name: { $regex: new RegExp(`^${item.item_name}$`, 'i') }
+        });
+
+        if (!inventoryItem) {
+          return res.status(404).json({
+            success: false,
+            message: `Item '${item.item_name}' not found in inventory`,
+            error: 'Please add this item to inventory first'
+          });
+        }
+
+        // Check if sufficient stock available
+        if (inventoryItem.stock_qty < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient stock for '${item.item_name}'`,
+            error: `Only ${inventoryItem.stock_qty} units available, but ${item.quantity} requested`
+          });
+        }
+
+        // Add cost price from inventory for COGS calculation
+        saleItems.push({
+          item_name: item.item_name,
+          quantity: item.quantity,
+          price_per_unit: item.price_per_unit, // Selling price
+          cost_per_unit: inventoryItem.price_per_unit // Cost price from inventory
+        });
+      }
 
       // Create new sale
       const sale = new Sale({
         user_id: userId,
-        items,
+        items: saleItems,
         payment_method,
-        date: date || new Date()
+        date: date || new Date(),
+        customer_name: customer_name || 'Walk-in Customer',
+        customer_phone: customer_phone || ''
       });
 
       await sale.save();
+
+      // Deduct inventory quantities
+      for (const item of saleItems) {
+        await Inventory.findOneAndUpdate(
+          {
+            user_id: userId,
+            item_name: { $regex: new RegExp(`^${item.item_name}$`, 'i') }
+          },
+          {
+            $inc: { stock_qty: -item.quantity }
+          }
+        );
+      }
+
       await sale.populate('user_id', 'name shop_name');
 
       res.status(201).json({
         success: true,
-        message: 'Sale created successfully',
+        message: 'Sale created successfully and inventory updated',
         data: sale
       });
     } catch (error) {
@@ -144,13 +196,10 @@ const salesController = {
 
       const { id } = req.params;
       const userId = req.user._id;
-      const { items, payment_method, date } = req.body;
+      const { items, payment_method, date, customer_name, customer_phone } = req.body;
 
-      const sale = await Sale.findOneAndUpdate(
-        { _id: id, user_id: userId },
-        { items, payment_method, date },
-        { new: true, runValidators: true }
-      ).populate('user_id', 'name shop_name');
+      // Find the sale first
+      const sale = await Sale.findOne({ _id: id, user_id: userId });
 
       if (!sale) {
         return res.status(404).json({
@@ -159,6 +208,19 @@ const salesController = {
           error: 'Sale does not exist or does not belong to you'
         });
       }
+
+      // Update fields
+      if (items) sale.items = items;
+      if (payment_method) sale.payment_method = payment_method;
+      if (date) sale.date = date;
+      if (customer_name !== undefined) sale.customer_name = customer_name;
+      if (customer_phone !== undefined) sale.customer_phone = customer_phone;
+
+      // Save to trigger pre-save middleware that recalculates totals
+      await sale.save();
+      
+      // Populate user details
+      await sale.populate('user_id', 'name shop_name');
 
       res.status(200).json({
         success: true,
@@ -257,6 +319,51 @@ const salesController = {
       res.status(500).json({
         success: false,
         message: 'Error fetching sales analytics',
+        error: error.message
+      });
+    }
+  },
+
+  // Get today's sales summary
+  getTodaysSales: async (req, res) => {
+    try {
+      const userId = req.user._id;
+      
+      // Get today's date range (start of day to end of day)
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+      // Get today's sales
+      const todaysSales = await Sale.find({
+        user_id: userId,
+        createdAt: { $gte: startOfDay, $lte: endOfDay }
+      });
+
+      // Calculate totals
+      const totalRevenue = todaysSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+      const totalCOGS = todaysSales.reduce((sum, sale) => sum + (sale.total_cogs || 0), 0);
+      const grossProfit = totalRevenue - totalCOGS;
+      const salesCount = todaysSales.length;
+      const totalItems = todaysSales.reduce((sum, sale) => sum + sale.items.length, 0);
+
+      res.status(200).json({
+        success: true,
+        message: 'Today\'s sales retrieved successfully',
+        data: {
+          totalRevenue,
+          totalCOGS,
+          grossProfit,
+          salesCount,
+          totalItems,
+          sales: todaysSales
+        }
+      });
+    } catch (error) {
+      console.error('Get today\'s sales error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching today\'s sales',
         error: error.message
       });
     }

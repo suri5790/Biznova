@@ -21,8 +21,10 @@ const expensesRoutes = require('./routes/expensesRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const customersRoutes = require('./routes/customersRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const aiRoutesAdvanced = require('./routes/aiRoutesAdvanced');
 const aiInsightsRoutes = require('./routes/aiInsightsRoutes');
 const messagesRoutes = require('./routes/messagesRoutes');
+const profitAnalyticsRoutes = require('./routes/profitAnalyticsRoutes');
 
 // Initialize Express app
 const app = express();
@@ -78,9 +80,11 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/customers', customersRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', aiRoutesAdvanced); // Advanced AI with OpenAI, ElevenLabs, Deepgram support
+app.use('/api/ai-basic', aiRoutes); // Fallback basic AI routes
 app.use('/api/ai-insights', aiInsightsRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/profit-analytics', profitAnalyticsRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -98,7 +102,8 @@ app.get('/', (req, res) => {
       customers: '/api/customers',
       ai: '/api/ai',
       aiInsights: '/api/ai-insights',
-      messages: '/api/messages'
+      messages: '/api/messages',
+      profitAnalytics: '/api/profit-analytics'
     },
     note: 'All endpoints are ready for Phase 2 implementation'
   });

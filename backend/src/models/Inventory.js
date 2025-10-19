@@ -28,6 +28,33 @@ const inventorySchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Price per unit is required'],
     min: [0, 'Price cannot be negative']
+  },
+  min_stock_level: {
+    type: Number,
+    min: [0, 'Minimum stock level cannot be negative'],
+    default: 5
+  },
+  category: {
+    type: String,
+    enum: [
+      'Electronics',
+      'Clothing',
+      'Food & Beverages',
+      'Books',
+      'Home & Garden',
+      'Sports',
+      'Beauty & Health',
+      'Automotive',
+      'Office Supplies',
+      'Other'
+    ],
+    default: 'Other',
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true,
+    maxlength: [255, 'Description cannot exceed 255 characters']
   }
 }, {
   timestamps: true,

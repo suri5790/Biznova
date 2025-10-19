@@ -30,22 +30,47 @@ const saleSchema = new mongoose.Schema({
     },
     price_per_unit: {
       type: Number,
-      required: [true, 'Price per unit is required'],
+      required: [true, 'Selling price per unit is required'],
       min: [0, 'Price cannot be negative']
+    },
+    cost_per_unit: {
+      type: Number,
+      required: [true, 'Cost per unit is required for COGS calculation'],
+      min: [0, 'Cost cannot be negative']
     }
   }],
   total_amount: {
     type: Number,
-     min: [0, 'Total amount cannot be negative'],
+    min: [0, 'Total amount cannot be negative'],
+    default: 0
+  },
+  total_cogs: {
+    type: Number,
+    min: [0, 'COGS cannot be negative'],
+    default: 0
+  },
+  gross_profit: {
+    type: Number,
     default: 0
   },
   payment_method: {
     type: String,
     required: [true, 'Payment method is required'],
     enum: {
-      values: ['Cash', 'UPI', 'Credit'],
-      message: 'Payment method must be Cash, UPI, or Credit'
+      values: ['Cash', 'Card', 'UPI', 'Bank Transfer', 'Credit'],
+      message: 'Payment method must be Cash, Card, UPI, Bank Transfer, or Credit'
     }
+  },
+  customer_name: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Customer name cannot exceed 100 characters'],
+    default: 'Walk-in Customer'
+  },
+  customer_phone: {
+    type: String,
+    trim: true,
+    maxlength: [15, 'Phone number cannot exceed 15 characters']
   }
 }, {
   timestamps: true,
@@ -69,12 +94,21 @@ saleSchema.virtual('summary').get(function() {
   };
 });
 
-// Calculate total amount before saving
+// Calculate totals before saving
 saleSchema.pre('save', function(next) {
   if (this.items && this.items.length > 0) {
+    // Calculate revenue
     this.total_amount = this.items.reduce((total, item) => {
       return total + (item.quantity * item.price_per_unit);
     }, 0);
+    
+    // Calculate COGS
+    this.total_cogs = this.items.reduce((total, item) => {
+      return total + (item.quantity * item.cost_per_unit);
+    }, 0);
+    
+    // Calculate Gross Profit (Revenue - COGS)
+    this.gross_profit = this.total_amount - this.total_cogs;
   }
   next();
 });

@@ -4,12 +4,14 @@
   "description": "BizNova Frontend - React.js Business Management Interface",
   "private": true,
   "dependencies": {
+    "axios": "^1.6.2",
+    "html2pdf.js": "^0.12.1",
+    "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^6.8.1",
     "recharts": "^2.8.0",
-    "axios": "^1.6.2",
-    "lucide-react": "^0.294.0",
     "tailwindcss": "^3.3.6"
   },
   "scripts": {
@@ -37,17 +39,8 @@
     ]
   },
   "devDependencies": {
-    "react-scripts": "5.0.1",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.8.1",
-    "recharts": "^2.8.0",
-    "axios": "^1.6.2",
-    "lucide-react": "^0.294.0",
-    "tailwindcss": "^3.3.6"
+    "postcss": "^8.4.32",
+    "react-scripts": "5.0.1"
   }
 }
