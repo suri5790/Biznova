@@ -194,4 +194,78 @@ export const customersAPI = {
     },
 };
 
+// AI API calls
+export const aiAPI = {
+    // Chat with AI Assistant
+    chatWithAI: async (chatData) => {
+        const response = await api.post('/ai/chat', chatData);
+        return response.data;
+    },
+
+    // Get business insights
+    getBusinessInsights: async () => {
+        const response = await api.get('/ai/insights');
+        return response.data;
+    },
+
+    // Get daily digest
+    getDailyDigest: async () => {
+        const response = await api.get('/ai/daily-digest');
+        return response.data;
+    },
+
+    // Process voice input
+    processVoiceInput: async (audioData) => {
+        const response = await api.post('/ai/voice-input', audioData);
+        return response.data;
+    },
+
+    // Generate image
+    generateImage: async (imageData) => {
+        const response = await api.post('/ai/generate-image', imageData);
+        return response.data;
+    },
+};
+
+// AI Insights API calls
+export const aiInsightsAPI = {
+    // Get all AI insights
+    getAllInsights: async (params = {}) => {
+        const response = await api.get('/ai-insights', { params });
+        return response.data;
+    },
+
+    // Get latest insights
+    getLatestInsights: async (limit = 5) => {
+        const response = await api.get('/ai-insights/latest', {
+            params: { limit }
+        });
+        return response.data;
+    },
+
+    // Get insight by ID
+    getInsightById: async (id) => {
+        const response = await api.get(`/ai-insights/${id}`);
+        return response.data;
+    },
+
+    // Create new insight
+    createInsight: async (insightData) => {
+        const response = await api.post('/ai-insights', insightData);
+        return response.data;
+    },
+
+    // Update insight
+    updateInsight: async (id, insightData) => {
+        const response = await api.put(`/ai-insights/${id}`, insightData);
+        return response.data;
+    },
+
+    // Delete insight
+    deleteInsight: async (id) => {
+        const response = await api.delete(`/ai-insights/${id}`);
+        return response.data;
+    },
+};
+
 export default api;

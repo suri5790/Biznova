@@ -8,6 +8,7 @@ import Expenses from './pages/Expenses';
 import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Analytics from './pages/Analytics';
+import AI from './pages/AI';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -67,6 +68,7 @@ function App() {
               <Route path="expenses" element={<Expenses />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="ai" element={<AI />} />
               <Route path="analytics" element={<Analytics />} />
             </Route>
           </Routes>
