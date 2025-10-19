@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Download, Edit, Trash2, Eye, DollarSign } from 'lucide-react';
 import { expensesAPI } from '../services/api';
 
+/**
+ * Expenses Page Component
+ * Content-only component for expense management - no layout concerns
+ * Renders inside DashboardLayout via React Router Outlet
+ */
+
 const Expenses = () => {
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
