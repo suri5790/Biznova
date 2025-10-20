@@ -35,8 +35,8 @@ connectDB();
 
 // CORS configuration to allow multiple origins
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-  'http://localhost:3001'
+  process.env.FRONTEND_URL, 'http://localhost:3000',
+  'http://localhost:3001', "https://biznova.onrender.com"
 ];
 
 app.use(cors({
