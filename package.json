@@ -25,5 +25,8 @@
   "license": "Private",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "multer": "^2.0.2"
   }
 }

@@ -9,9 +9,9 @@ import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Analytics from './pages/Analytics';
 import AI from './pages/AI';
+import AIInsights from './pages/AIInsights';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Settings from './pages/Settings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -69,9 +69,9 @@ function App() {
               <Route path="expenses" element={<Expenses />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="customers" element={<Customers />} />
-              <Route path="ai" element={<AI />} />
+              <Route path="ai" element={<AIInsights />} />
+              <Route path="ai-chat" element={<AI />} />
               <Route path="analytics" element={<Analytics />} />
-              <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
         </div>

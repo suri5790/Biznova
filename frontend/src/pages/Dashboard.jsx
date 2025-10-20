@@ -124,7 +124,7 @@ const Dashboard = () => {
       
     });
     
-    const lowStock = inventoryData.filter(item => item.stock_qty <= 5);
+    const lowStock = inventoryData.filter(item => item.stock_qty <= (item.min_stock_level || 5));
     if (lowStock.length > 0) {
       activities.push({
         id: 'low-stock',
@@ -348,11 +348,11 @@ const Dashboard = () => {
                     {actualProfit > 0 ? ' Great work!' : ' Consider reviewing expenses.'}
                   </p>
                 </div>
-                {inventory.filter(i => i.stock_qty <= 5).length > 0 && (
+                {inventory.filter(i => i.stock_qty <= (i.min_stock_level || 5)).length > 0 && (
                   <div className="p-4 bg-yellow-50 rounded-lg">
                     <p className="text-sm font-semibold text-yellow-900 mb-2">⚠️ Stock Alert</p>
                     <p className="text-sm text-gray-700">
-                      {inventory.filter(i => i.stock_qty <= 5).length} items are running low. Consider restocking soon.
+                      {inventory.filter(i => i.stock_qty <= (i.min_stock_level || 5)).length} items are running low. Consider restocking soon.
                     </p>
                   </div>
                 )}

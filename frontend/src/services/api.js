@@ -276,6 +276,12 @@ export const profitAnalyticsAPI = {
         const response = await api.get('/profit-analytics/top-products', { params });
         return response.data;
     },
+
+    // Get performance insights with month-over-month comparisons
+    getPerformanceInsights: async () => {
+        const response = await api.get('/profit-analytics/performance-insights');
+        return response.data;
+    },
 };
 
 // AI Insights API calls
@@ -283,6 +289,24 @@ export const aiInsightsAPI = {
     // Get all AI insights
     getAllInsights: async (params = {}) => {
         const response = await api.get('/ai-insights', { params });
+        return response.data;
+    },
+
+    // Generate demand forecast using Gemini AI
+    generateDemandForecast: async (params = {}) => {
+        const response = await api.get('/ai-insights/generate/demand-forecast', { params });
+        return response.data;
+    },
+
+    // Generate revenue optimization strategies using Gemini AI
+    generateRevenueOptimization: async () => {
+        const response = await api.get('/ai-insights/generate/revenue-optimization');
+        return response.data;
+    },
+
+    // Generate expense forecast using Gemini AI
+    generateExpenseForecast: async () => {
+        const response = await api.get('/ai-insights/generate/expense-forecast');
         return response.data;
     },
 

@@ -205,6 +205,139 @@ const Sales = () => {
         }
     };
 
+    // Download Invoice/Bill for Customer
+    const downloadInvoice = async (sale) => {
+        try {
+            toast.loading('Generating invoice...', { id: 'invoice' });
+
+            const invoiceElement = document.createElement('div');
+            invoiceElement.style.padding = '40px';
+            invoiceElement.style.fontFamily = 'Arial, sans-serif';
+            invoiceElement.style.backgroundColor = '#ffffff';
+
+            // Get current user/shop details (you can customize this)
+            const shopName = localStorage.getItem('shopName') || 'Biznova';
+            const saleDate = new Date(sale.createdAt).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+            const saleTime = new Date(sale.createdAt).toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            invoiceElement.innerHTML = `
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <!-- Header -->
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #4F46E5; padding-bottom: 20px;">
+                        <h1 style="color: #4F46E5; font-size: 36px; margin: 0 0 10px 0;">INVOICE</h1>
+                        <p style="color: #666; font-size: 18px; margin: 0;">${shopName}</p>
+                    </div>
+
+                    <!-- Invoice Info -->
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                        <div>
+                            <p style="margin: 5px 0; color: #666;">
+                                <strong style="color: #111;">Invoice No:</strong> #${sale._id.substring(0, 8).toUpperCase()}
+                            </p>
+                            <p style="margin: 5px 0; color: #666;">
+                                <strong style="color: #111;">Date:</strong> ${saleDate}
+                            </p>
+                            <p style="margin: 5px 0; color: #666;">
+                                <strong style="color: #111;">Time:</strong> ${saleTime}
+                            </p>
+                        </div>
+                        <div style="text-align: right;">
+                            ${sale.customer_name ? `
+                                <p style="margin: 5px 0; color: #666;">
+                                    <strong style="color: #111;">Customer:</strong> ${sale.customer_name}
+                                </p>
+                            ` : ''}
+                            ${sale.customer_phone ? `
+                                <p style="margin: 5px 0; color: #666;">
+                                    <strong style="color: #111;">Phone:</strong> ${sale.customer_phone}
+                                </p>
+                            ` : ''}
+                            <p style="margin: 5px 0; color: #666;">
+                                <strong style="color: #111;">Payment:</strong> ${sale.payment_method}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background-color: #F3F4F6;">
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #4F46E5;">#</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #4F46E5;">Item</th>
+                                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #4F46E5;">Qty</th>
+                                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #4F46E5;">Price</th>
+                                <th style="padding: 12px; text-align: right; border-bottom: 2px solid #4F46E5;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sale.items.map((item, index) => `
+                                <tr style="border-bottom: 1px solid #E5E7EB;">
+                                    <td style="padding: 12px;">${index + 1}</td>
+                                    <td style="padding: 12px;">${item.item_name}</td>
+                                    <td style="padding: 12px; text-align: center;">${item.quantity}</td>
+                                    <td style="padding: 12px; text-align: right;">₹${item.price_per_unit.toLocaleString()}</td>
+                                    <td style="padding: 12px; text-align: right;">₹${(item.quantity * item.price_per_unit).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <!-- Total -->
+                    <div style="text-align: right; margin-bottom: 40px;">
+                        <div style="display: inline-block; background-color: #F3F4F6; padding: 20px 30px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 14px; color: #666;">TOTAL AMOUNT</p>
+                            <p style="margin: 10px 0 0 0; font-size: 32px; font-weight: bold; color: #4F46E5;">
+                                ₹${sale.total_amount.toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="text-align: center; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                        <p style="margin: 5px 0; color: #999; font-size: 12px;">Thank you for your business!</p>
+                        <p style="margin: 5px 0; color: #999; font-size: 12px;">Generated via Biznova - Business Management System</p>
+                    </div>
+                </div>
+            `;
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Invoice_${sale._id.substring(0, 8).toUpperCase()}_${saleDate.replace(/\s/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait' 
+                }
+            };
+
+            await html2pdf().set(opt).from(invoiceElement).save();
+            
+            toast.success('Invoice downloaded successfully!', { 
+                id: 'invoice',
+                duration: 3000 
+            });
+        } catch (error) {
+            console.error('Error generating invoice:', error);
+            toast.error('Failed to generate invoice', { 
+                id: 'invoice',
+                duration: 3000 
+            });
+        }
+    };
+
     // Export to PDF
     const exportSalesToPDF = () => {
         const element = document.createElement('div');
@@ -444,6 +577,13 @@ const Sales = () => {
                                                     title="View Details"
                                                 >
                                                     <Eye className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => downloadInvoice(sale)}
+                                                    className="text-green-600 hover:text-green-900"
+                                                    title="Download Invoice"
+                                                >
+                                                    <Download className="h-4 w-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleEdit(sale)}

@@ -7,8 +7,7 @@ import {
   Package, 
   Users, 
   Brain, 
-  BarChart3,
-  Settings
+  BarChart3
 } from 'lucide-react';
 
 /**
@@ -22,7 +21,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Expenses', href: '/expenses', icon: Receipt },
     { name: 'Inventory', href: '/inventory', icon: Package },
     { name: 'Customers', href: '/customers', icon: Users },
-    { name: 'AI Assistant', href: '/ai', icon: Brain },
+    { name: 'AI Insights', href: '/ai', icon: Brain },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ];
 
@@ -57,20 +56,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </NavLink>
           );
         })}
-      </nav>
-      
-      {/* Sidebar footer */}
-      <div className="p-4 border-t border-gray-100">
-        <NavLink
-          to="/settings"
-          onClick={onClose}
-          className="w-full flex items-center gap-3 text-gray-600 hover:text-indigo-600 transition"
-        >
-          <Settings className="h-5 w-5" />
-          Settings
-        </NavLink>
-        <p className="text-xs text-gray-400 mt-3">BizNova v1.0.0</p>
-      </div>
+      </nav>      
     </div>
   );
 };

@@ -44,4 +44,9 @@ router.get('/sales-by-category', authenticateToken, profitAnalyticsController.ge
 // @access  Private
 router.get('/top-products', authenticateToken, profitAnalyticsController.getTopProducts);
 
+// @route   GET /api/profit-analytics/performance-insights
+// @desc    Get performance insights with month-over-month comparisons
+// @access  Private
+router.get('/performance-insights', authenticateToken, profitAnalyticsController.getPerformanceInsights);
+
 module.exports = router;

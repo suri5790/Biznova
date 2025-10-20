@@ -113,7 +113,7 @@ const Inventory = () => {
             // Status filter
             if (filters.status !== 'All') {
                 if (filters.status === 'In Stock' && item.stock_qty <= 0) return false;
-                if (filters.status === 'Low Stock' && (item.stock_qty > 5 || item.stock_qty <= 0)) return false;
+                if (filters.status === 'Low Stock' && (item.stock_qty > (item.min_stock_level || 5) || item.stock_qty <= 0)) return false;
                 if (filters.status === 'Out of Stock' && item.stock_qty > 0) return false;
             }
 
@@ -122,7 +122,7 @@ const Inventory = () => {
     };
 
     const filteredInventory = getFilteredInventory();
-    const lowStockItems = inventory.filter(item => item.stock_qty <= 5);
+    const lowStockItems = inventory.filter(item => item.stock_qty <= (item.min_stock_level || 5));
 
     // Apply filters
     const applyFilters = () => {
@@ -192,9 +192,9 @@ const Inventory = () => {
                             <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">
                                 <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; 
                                     ${item.stock_qty <= 0 ? 'background: #FEE2E2; color: #991B1B;' : 
-                                      item.stock_qty <= 5 ? 'background: #FEF3C7; color: #92400E;' : 
+                                      item.stock_qty <= (item.min_stock_level || 5) ? 'background: #FEF3C7; color: #92400E;' : 
                                       'background: #D1FAE5; color: #065F46;'}">
-                                    ${item.stock_qty <= 0 ? 'Out of Stock' : item.stock_qty <= 5 ? 'Low Stock' : 'In Stock'}
+                                    ${item.stock_qty <= 0 ? 'Out of Stock' : item.stock_qty <= (item.min_stock_level || 5) ? 'Low Stock' : 'In Stock'}
                                 </span>
                             </td>
                         </tr>

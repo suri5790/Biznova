@@ -246,14 +246,14 @@ const profitAnalyticsController = {
 
       const inventory = await Inventory.find({ user_id: userId })
         .sort({ item_name: 1 })
-        .select('item_name stock_qty price_per_unit');
+        .select('item_name stock_qty price_per_unit min_stock_level');
 
       const inventoryDetails = inventory.map(item => ({
         itemName: item.item_name,
         quantity: item.stock_qty,
         costPerUnit: item.price_per_unit,
         totalValue: item.stock_qty * item.price_per_unit,
-        isLowStock: item.stock_qty <= 5
+        isLowStock: item.stock_qty <= item.min_stock_level
       }));
 
       const totalValue = inventoryDetails.reduce((sum, item) => sum + item.totalValue, 0);
@@ -496,6 +496,103 @@ const profitAnalyticsController = {
       res.status(500).json({
         success: false,
         message: 'Error fetching top products',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * Get performance insights with month-over-month comparisons
+   * Returns insights for analytics dashboard
+   */
+  getPerformanceInsights: async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const Customer = require('../models/Customer');
+      
+      // Get current month dates
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      // Get last month dates
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      
+      // Current month sales
+      const currentMonthSales = await Sale.aggregate([
+        { $match: { user_id: userId, createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+        { $group: { _id: null, total: { $sum: '$total_amount' }, count: { $sum: 1 }, avgOrder: { $avg: '$total_amount' } } }
+      ]);
+      
+      // Last month sales
+      const lastMonthSales = await Sale.aggregate([
+        { $match: { user_id: userId, createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd } } },
+        { $group: { _id: null, total: { $sum: '$total_amount' }, count: { $sum: 1 }, avgOrder: { $avg: '$total_amount' } } }
+      ]);
+      
+      // New customers this month
+      const newCustomers = await Customer.countDocuments({
+        user_id: userId,
+        createdAt: { $gte: currentMonthStart, $lte: currentMonthEnd }
+      });
+      
+      // Calculate changes
+      const currentSales = currentMonthSales[0]?.total || 0;
+      const lastSales = lastMonthSales[0]?.total || 0;
+      
+      // Handle sales change calculation
+      let salesChange = 0;
+      if (lastSales > 0) {
+        salesChange = (((currentSales - lastSales) / lastSales) * 100).toFixed(1);
+      } else if (currentSales > 0) {
+        salesChange = 100; // If no previous sales but have current sales, show 100% increase
+      }
+      
+      const currentAvgOrder = currentMonthSales[0]?.avgOrder || 0;
+      const lastAvgOrder = lastMonthSales[0]?.avgOrder || 0;
+      
+      // Handle avg order change calculation
+      let avgOrderChange = 0;
+      if (lastAvgOrder > 0) {
+        avgOrderChange = (((currentAvgOrder - lastAvgOrder) / lastAvgOrder) * 100).toFixed(1);
+      } else if (currentAvgOrder > 0) {
+        avgOrderChange = 100;
+      }
+      
+      // Get low stock items (comparing stock_qty with each item's min_stock_level)
+      const allItems = await Inventory.find({ user_id: userId })
+        .select('item_name stock_qty min_stock_level');
+      
+      // Count low stock items
+      const lowStockItems = allItems.filter(item => item.stock_qty <= item.min_stock_level).length;
+      
+      res.status(200).json({
+        success: true,
+        message: 'Performance insights retrieved successfully',
+        data: {
+          salesChange: {
+            percentage: parseFloat(salesChange),
+            direction: salesChange >= 0 ? 'up' : 'down',
+            currentMonth: currentSales,
+            lastMonth: lastSales
+          },
+          avgOrderValue: {
+            percentage: parseFloat(avgOrderChange),
+            direction: avgOrderChange >= 0 ? 'up' : 'down',
+            current: Math.round(currentAvgOrder),
+            last: Math.round(lastAvgOrder)
+          },
+          newCustomers: newCustomers,
+          currentMonthOrders: currentMonthSales[0]?.count || 0,
+          lowStockItems: lowStockItems
+        }
+      });
+    } catch (error) {
+      console.error('Performance insights error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching performance insights',
         error: error.message
       });
     }

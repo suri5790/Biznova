@@ -22,7 +22,7 @@ const inventoryController = {
       }
       
       if (low_stock === 'true') {
-        filter.stock_qty = { $lte: 5 };
+        filter.$expr = { $lte: ['$stock_qty', '$min_stock_level'] };
       }
 
       const inventory = await Inventory.find(filter)
@@ -262,10 +262,10 @@ const inventoryController = {
         { $group: { _id: null, total: { $sum: { $multiply: ['$stock_qty', '$price_per_unit'] } } } }
       ]);
 
-      // Get low stock count
+      // Get low stock count (comparing with min_stock_level)
       const lowStockCount = await Inventory.countDocuments({
         user_id: userId,
-        stock_qty: { $lte: 5 }
+        $expr: { $lte: ['$stock_qty', '$min_stock_level'] }
       });
 
       // Get total items count

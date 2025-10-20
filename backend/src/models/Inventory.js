@@ -80,7 +80,7 @@ inventorySchema.virtual('summary').get(function() {
 
 // Virtual for low stock check
 inventorySchema.virtual('isLowStock').get(function() {
-  return this.stock_qty <= 5; // Consider low stock if quantity is 5 or less
+  return this.stock_qty <= this.min_stock_level; // Compare against user-defined minimum stock level
 });
 
 module.exports = mongoose.model('Inventory', inventorySchema);

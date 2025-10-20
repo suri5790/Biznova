@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users, Package, Wallet, Receipt } from 'lucide-react';
 import { profitAnalyticsAPI } from '../services/api';
 
 const Analytics = () => {
+    const navigate = useNavigate();
     const [timeRange, setTimeRange] = useState('7d');
     const [loading, setLoading] = useState(true);
     const [profitData, setProfitData] = useState(null);
@@ -11,6 +13,7 @@ const Analytics = () => {
     const [timeSeriesData, setTimeSeriesData] = useState([]);
     const [categoryData, setCategoryData] = useState([]);
     const [topProducts, setTopProducts] = useState([]);
+    const [insights, setInsights] = useState(null);
 
     useEffect(() => {
         const fetchAnalyticsData = async () => {
@@ -26,7 +29,7 @@ const Analytics = () => {
                 };
                 const days = daysMap[timeRange] || 7;
                 
-                const [profitRes, inventoryRes, timeSeriesRes, categoryRes, topProductsRes] = await Promise.all([
+                const [profitRes, inventoryRes, timeSeriesRes, categoryRes, topProductsRes, insightsRes] = await Promise.all([
                     profitAnalyticsAPI.getProfitAnalysis().catch(err => {
                         console.warn('⚠️ Profit analytics API error:', err.message);
                         return { success: false };
@@ -45,6 +48,10 @@ const Analytics = () => {
                     }),
                     profitAnalyticsAPI.getTopProducts({ days, limit: 5 }).catch(err => {
                         console.warn('⚠️ Top products API error:', err.message);
+                        return { success: false };
+                    }),
+                    profitAnalyticsAPI.getPerformanceInsights().catch(err => {
+                        console.warn('⚠️ Performance insights API error:', err.message);
                         return { success: false };
                     })
                 ]);
@@ -67,6 +74,10 @@ const Analytics = () => {
                 
                 if (topProductsRes?.success) {
                     setTopProducts(topProductsRes.data);
+                }
+                
+                if (insightsRes?.success) {
+                    setInsights(insightsRes.data);
                 }
             } catch (error) {
                 console.error('❌ Error fetching analytics data:', error);
@@ -304,86 +315,179 @@ const Analytics = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="card">
                     <h3 className="text-lg font-semibold mb-4">Performance Insights</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                    {insights ? (
+                        <div className="space-y-4">
+                            {/* Sales Change */}
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <div className={`w-2 h-2 ${insights.salesChange.direction === 'up' ? 'bg-green-500' : 'bg-red-500'} rounded-full mt-2`}></div>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-gray-900">
+                                        {insights.salesChange.lastMonth === 0 && insights.salesChange.currentMonth > 0 ? (
+                                            `Great start! ₹${insights.salesChange.currentMonth.toLocaleString()} in sales this month`
+                                        ) : (
+                                            `Sales are ${insights.salesChange.direction} ${Math.abs(insights.salesChange.percentage)}% this month`
+                                        )}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {insights.salesChange.lastMonth === 0 ? (
+                                            'First month with sales data'
+                                        ) : (
+                                            `₹${insights.salesChange.currentMonth.toLocaleString()} vs ₹${insights.salesChange.lastMonth.toLocaleString()} last month`
+                                        )}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-gray-900">Sales are up 12.5% this month</p>
-                                <p className="text-xs text-gray-500">Compared to last month</p>
+
+                            {/* Average Order Value */}
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <div className={`w-2 h-2 ${insights.avgOrderValue.direction === 'up' ? 'bg-green-500' : insights.avgOrderValue.direction === 'down' ? 'bg-yellow-500' : 'bg-gray-500'} rounded-full mt-2`}></div>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-gray-900">
+                                        Average order value {insights.avgOrderValue.direction === 'up' ? 'increased' : insights.avgOrderValue.direction === 'down' ? 'decreased' : 'unchanged'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        ₹{insights.avgOrderValue.current.toLocaleString()} per order
+                                        {insights.avgOrderValue.direction === 'down' && ' - Consider upselling strategies'}
+                                    </p>
+                                </div>
                             </div>
+
+                            {/* Customer Acquisition */}
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <div className={`w-2 h-2 ${insights.newCustomers > 0 ? 'bg-blue-500' : 'bg-gray-500'} rounded-full mt-2`}></div>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-gray-900">
+                                        {insights.newCustomers > 0 ? 'Customer acquisition is ' + (insights.newCustomers > 10 ? 'strong' : 'steady') : 'No new customers this month'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {insights.newCustomers} new customers this month
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Low Stock Alert */}
+                            {insights.lowStockItems > 0 && (
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0">
+                                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-gray-900">
+                                            {insights.lowStockItems} items running low on stock
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            Review inventory to avoid stockouts
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                                <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                            </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-gray-900">Average order value decreased</p>
-                                <p className="text-xs text-gray-500">Consider upselling strategies</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                            </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-gray-900">Customer acquisition is strong</p>
-                                <p className="text-xs text-gray-500">89 new customers this month</p>
-                            </div>
-                        </div>
-                    </div>
+                    ) : (
+                        <div className="text-gray-500 text-sm">Loading insights...</div>
+                    )}
                 </div>
 
                 <div className="card">
                     <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
                     <div className="space-y-3">
-                        <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
-                            <p className="text-sm font-medium text-gray-900">Generate Sales Report</p>
-                            <p className="text-xs text-gray-500">Export detailed sales data</p>
+                        <button 
+                            onClick={() => navigate('/sales')}
+                            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+                        >
+                            <p className="text-sm font-medium text-gray-900">View Sales Dashboard</p>
+                            <p className="text-xs text-gray-500">Access detailed sales data & reports</p>
                         </button>
-                        <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
-                            <p className="text-sm font-medium text-gray-900">View Customer Analytics</p>
-                            <p className="text-xs text-gray-500">Customer behavior insights</p>
+                        <button 
+                            onClick={() => navigate('/customers')}
+                            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+                        >
+                            <p className="text-sm font-medium text-gray-900">Customer Management</p>
+                            <p className="text-xs text-gray-500">View & manage customer database</p>
                         </button>
-                        <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
-                            <p className="text-sm font-medium text-gray-900">Inventory Analysis</p>
-                            <p className="text-xs text-gray-500">Stock performance metrics</p>
+                        <button 
+                            onClick={() => navigate('/inventory')}
+                            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+                        >
+                            <p className="text-sm font-medium text-gray-900">Inventory Management</p>
+                            <p className="text-xs text-gray-500">Stock levels & performance metrics</p>
+                        </button>
+                        <button 
+                            onClick={() => navigate('/expenses')}
+                            className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+                        >
+                            <p className="text-sm font-medium text-gray-900">Expense Tracking</p>
+                            <p className="text-xs text-gray-500">Monitor business expenses</p>
                         </button>
                     </div>
                 </div>
 
                 <div className="card">
                     <h3 className="text-lg font-semibold mb-4">Goals & Targets</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600">Monthly Sales Target</span>
-                                <span className="text-gray-900">₹1,25,000 / ₹1,50,000</span>
+                    {insights && profitData ? (
+                        <div className="space-y-4">
+                            {/* Monthly Sales Target */}
+                            <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-600">Monthly Sales Target</span>
+                                    <span className="text-gray-900">
+                                        ₹{insights.salesChange.currentMonth.toLocaleString()} / ₹{Math.ceil(insights.salesChange.currentMonth * 1.2).toLocaleString()}
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        className="bg-green-500 h-2 rounded-full transition-all" 
+                                        style={{ width: `${Math.min((insights.salesChange.currentMonth / (insights.salesChange.currentMonth * 1.2)) * 100, 100)}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {insights.salesChange.direction === 'up' ? '📈 On track!' : '💪 Keep pushing!'}
+                                </p>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-green-500 h-2 rounded-full" style={{ width: '83%' }}></div>
+
+                            {/* Orders This Month */}
+                            <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-600">Orders This Month</span>
+                                    <span className="text-gray-900">
+                                        {insights.currentMonthOrders} orders
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        className="bg-blue-500 h-2 rounded-full transition-all" 
+                                        style={{ width: `${Math.min((insights.currentMonthOrders / Math.max(insights.currentMonthOrders * 1.3, 50)) * 100, 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            {/* Profit Margin */}
+                            <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-600">Net Profit Margin</span>
+                                    <span className="text-gray-900">
+                                        {profitData.netProfitMargin}% (Target: 20%)
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        className={`h-2 rounded-full transition-all ${profitData.netProfitMargin >= 20 ? 'bg-green-500' : profitData.netProfitMargin >= 10 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                        style={{ width: `${Math.min((profitData.netProfitMargin / 20) * 100, 100)}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {profitData.netProfitMargin >= 20 ? '🎯 Excellent!' : profitData.netProfitMargin >= 10 ? '👍 Good' : '⚠️ Needs improvement'}
+                                </p>
                             </div>
                         </div>
-                        <div>
-                            <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600">Customer Target</span>
-                                <span className="text-gray-900">89 / 100</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '89%' }}></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600">Order Target</span>
-                                <span className="text-gray-900">1,247 / 1,500</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '83%' }}></div>
-                            </div>
-                        </div>
-                    </div>
+                    ) : (
+                        <div className="text-gray-500 text-sm">Loading targets...</div>
+                    )}
                 </div>
             </div>
         </div>
