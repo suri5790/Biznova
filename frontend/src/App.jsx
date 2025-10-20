@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import DashboardLayout from './components/DashboardLayout';
+import FloatingChatbot from './components/FloatingChatbot';
 import Dashboard from './pages/Dashboard';
 import Sales from './pages/Sales';
 import Expenses from './pages/Expenses';
@@ -60,7 +61,10 @@ function App() {
             {/* Protected routes with layout */}
             <Route path="/" element={
               <ProtectedRoute>
-              <DashboardLayout />
+                <>
+                  <DashboardLayout />
+                  <FloatingChatbot />
+                </>
               </ProtectedRoute>
             }>
               <Route index element={<Dashboard />} />

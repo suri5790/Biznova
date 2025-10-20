@@ -343,4 +343,19 @@ export const aiInsightsAPI = {
     },
 };
 
+// Chatbot API calls
+export const chatbotAPI = {
+    // Send message to chatbot
+    chat: async (message, language = 'en') => {
+        const response = await api.post('/chatbot/chat', { message, language });
+        return response.data;
+    },
+
+    // Get chatbot status
+    getStatus: async () => {
+        const response = await api.get('/chatbot/status');
+        return response.data;
+    },
+};
+
 export default api;
