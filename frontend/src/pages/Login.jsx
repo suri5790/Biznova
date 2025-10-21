@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Phone, Lock, Brain } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
@@ -14,7 +15,6 @@ const Login = () => {
     phone: '',
     password: ''
   });
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
@@ -29,7 +29,18 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+
+    // Validate required fields
+    if (!formData.phone.trim()) {
+      toast.error('Please enter your phone number');
+      return;
+    }
+
+    if (!formData.password) {
+      toast.error('Please enter your password');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -38,13 +49,14 @@ const Login = () => {
       console.log('Login result:', result);
 
       if (result.success) {
+        toast.success('Welcome back to BizNova!');
         navigate('/');
       } else {
-        setError(result.message);
+        toast.error(result.message || 'Login failed. Please try again.');
       }
     } catch (error) {
       console.error('Unexpected error in handleSubmit:', error);
-      setError('An unexpected error occurred. Please try again.');
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -68,18 +80,6 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-            {error.includes('Invalid phone number or password') && (
-              <div className="mt-2 text-sm">
-                <p>Don't have an account? <Link to="/register" className="underline">Create one here</Link></p>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Login Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -96,7 +96,6 @@ const Login = () => {
                   id="phone"
                   name="phone"
                   type="tel"
-                  required
                   value={formData.phone}
                   onChange={handleChange}
                   className="input-field pl-10"
@@ -118,7 +117,6 @@ const Login = () => {
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  required
                   value={formData.password}
                   onChange={handleChange}
                   className="input-field pl-10 pr-10"

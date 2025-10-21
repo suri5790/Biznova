@@ -39,9 +39,11 @@ const validateRegistration = [
     .withMessage('Invalid language selection'),
   
   body('upi_id')
-    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('UPI ID is required')
     .matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/)
-    .withMessage('Please enter a valid UPI ID')
+    .withMessage('Please enter a valid UPI ID (e.g., yourname@paytm)')
 ];
 
 // User login validation
@@ -78,7 +80,7 @@ const validateProfileUpdate = [
     .withMessage('Invalid language selection'),
   
   body('upi_id')
-    .optional()
+    .optional({ checkFalsy: true })
     .matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/)
     .withMessage('Please enter a valid UPI ID')
 ];

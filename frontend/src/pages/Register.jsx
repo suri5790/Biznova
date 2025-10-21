@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Phone, Lock, User, Building, Brain } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
@@ -20,7 +21,6 @@ const Register = () => {
     language: 'Hindi',
     upi_id: ''
   });
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useAuth();
@@ -35,23 +35,71 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Validate all required fields
+    if (!formData.name.trim()) {
+      toast.error('Please enter your full name');
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (!formData.phone.trim()) {
+      toast.error('Please enter your phone number');
       return;
     }
 
     // Validate phone number format
     if (!/^[6-9]\d{9}$/.test(formData.phone)) {
-      setError('Please enter a valid 10-digit Indian phone number');
+      toast.error('Please enter a valid 10-digit Indian phone number');
+      return;
+    }
+
+    if (!formData.shop_name.trim()) {
+      toast.error('Please enter your shop/business name');
+      return;
+    }
+
+    if (!formData.language) {
+      toast.error('Please select your preferred language');
+      return;
+    }
+
+    if (!formData.upi_id.trim()) {
+      toast.error('Please enter your UPI ID');
+      return;
+    }
+
+    // Validate UPI ID format
+    if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/.test(formData.upi_id)) {
+      toast.error('Please enter a valid UPI ID (e.g., yourname@paytm)');
+      return;
+    }
+
+    if (!formData.password) {
+      toast.error('Please enter a password');
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!formData.confirmPassword) {
+      toast.error('Please confirm your password');
+      return;
+    }
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    // Validate terms and conditions checkbox
+    const termsCheckbox = document.getElementById('terms');
+    if (!termsCheckbox.checked) {
+      toast.error('Please accept the Terms and Conditions');
       return;
     }
 
@@ -66,13 +114,14 @@ const Register = () => {
       console.log('Registration result:', result);
 
       if (result.success) {
+        toast.success('Account created successfully! Welcome to BizNova');
         navigate('/');
       } else {
-        setError(result.message);
+        toast.error(result.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
       console.error('Unexpected error in handleSubmit:', error);
-      setError('An unexpected error occurred. Please try again.');
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -96,18 +145,6 @@ const Register = () => {
           </p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-            {error.includes('phone number is already registered') && (
-              <div className="mt-2 text-sm">
-                <p>Try using a different phone number or <Link to="/login" className="underline">login with existing account</Link></p>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Registration Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -124,7 +161,6 @@ const Register = () => {
                   id="name"
                   name="name"
                   type="text"
-                  required
                   value={formData.name}
                   onChange={handleChange}
                   className="input-field pl-10"
@@ -146,7 +182,6 @@ const Register = () => {
                   id="phone"
                   name="phone"
                   type="tel"
-                  required
                   value={formData.phone}
                   onChange={handleChange}
                   className="input-field pl-10"
@@ -202,7 +237,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="upi_id" className="block text-sm font-medium text-gray-700">
-                UPI ID (Optional)
+                UPI ID
               </label>
               <input
                 id="upi_id"
@@ -228,7 +263,6 @@ const Register = () => {
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  required
                   value={formData.password}
                   onChange={handleChange}
                   className="input-field pl-10 pr-10"
@@ -260,7 +294,6 @@ const Register = () => {
                   id="confirmPassword"
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  required
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className="input-field pl-10 pr-10"
@@ -287,7 +320,6 @@ const Register = () => {
               id="terms"
               name="terms"
               type="checkbox"
-              required
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
