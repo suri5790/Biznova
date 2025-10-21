@@ -8,6 +8,8 @@ const Inventory = require('../models/Inventory');
 const Expense = require('../models/Expense');
 const Customer = require('../models/Customer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const ttsService = require('../services/ttsService');
+const mongoose = require('mongoose');
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -19,7 +21,7 @@ class ChatbotController {
     async chat(req, res) {
         try {
             const { message, language = 'en' } = req.body;
-            const userId = req.user.userId;
+            const userId = req.user._id;
 
             if (!message || message.trim() === '') {
                 return res.status(400).json({
@@ -30,13 +32,20 @@ class ChatbotController {
 
             console.log(`🤖 Chatbot Query [${language}]: "${message}" from user ${userId}`);
 
-            // Fetch all business data for context
+            // Fetch ALL business data for context (no limits)
             const [sales, inventory, expenses, customers] = await Promise.all([
-                Sale.find({ user: userId }).sort({ createdAt: -1 }).limit(100),
-                Inventory.find({ user: userId }),
-                Expense.find({ user: userId }).sort({ date: -1 }).limit(100),
-                Customer.find({ user: userId }).sort({ createdAt: -1 }).limit(50)
+                Sale.find({ user_id: userId }).sort({ createdAt: -1 }),
+                Inventory.find({ user_id: userId }),
+                Expense.find({ user_id: userId }).sort({ date: -1 }),
+                Customer.find({ user_id: userId }).sort({ createdAt: -1 })
             ]);
+
+            // Debug: Log what data was fetched
+            console.log(`📊 Data fetched for user ${userId}:`);
+            console.log(`   - Sales: ${sales.length} records`);
+            console.log(`   - Inventory: ${inventory.length} items`);
+            console.log(`   - Expenses: ${expenses.length} records`);
+            console.log(`   - Customers: ${customers.length} records`);
 
             // Calculate business metrics
             const totalRevenue = sales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
@@ -47,6 +56,14 @@ class ChatbotController {
             // Calculate profits
             const grossProfit = totalGrossProfit || (totalRevenue - totalCOGS);
             const netProfit = grossProfit - totalExpenses;
+
+            // Debug: Log calculated totals
+            console.log(`💰 Financial Summary:`);
+            console.log(`   - Total Revenue: ₹${totalRevenue}`);
+            console.log(`   - Total COGS: ₹${totalCOGS}`);
+            console.log(`   - Gross Profit: ₹${grossProfit}`);
+            console.log(`   - Total Expenses: ₹${totalExpenses}`);
+            console.log(`   - Net Profit: ₹${netProfit}`);
 
             // Get today's data
             const today = new Date();
@@ -121,9 +138,52 @@ class ChatbotController {
             // Low stock items
             const lowStockItems = inventory.filter(item => item.stock_qty <= (item.reorder_level || 10));
 
+            // Payment method breakdown
+            const paymentBreakdown = {};
+            sales.forEach(sale => {
+                if (!paymentBreakdown[sale.payment_method]) {
+                    paymentBreakdown[sale.payment_method] = { count: 0, total: 0 };
+                }
+                paymentBreakdown[sale.payment_method].count++;
+                paymentBreakdown[sale.payment_method].total += sale.total_amount;
+            });
+
+            // Expense category breakdown
+            const expenseCategories = {};
+            expenses.forEach(exp => {
+                if (!expenseCategories[exp.category]) {
+                    expenseCategories[exp.category] = { count: 0, total: 0 };
+                }
+                expenseCategories[exp.category].count++;
+                expenseCategories[exp.category].total += exp.amount;
+            });
+
+            // Get date context
+            const currentDate = new Date().toLocaleDateString('en-IN', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            const currentTime = new Date().toLocaleTimeString('en-IN', { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+
             // Build comprehensive context
             const businessContext = `
 You are a helpful AI business assistant for a retail store. Answer questions about the business in ${language === 'hi' ? 'Hindi' : language === 'te' ? 'Telugu' : 'English'}.
+
+📅 CURRENT DATE & TIME:
+- Date: ${currentDate}
+- Time: ${currentTime}
+- Note: Use this for "today", "this week", "this month" queries
+
+🔍 QUICK BUSINESS INSIGHTS:
+- Best Selling Item: ${topItems.length > 0 ? `${topItems[0][0]} (${topItems[0][1].quantity} units sold, ₹${topItems[0][1].revenue.toLocaleString('en-IN')} revenue)` : 'No sales yet'}
+- Lowest Stock Item: ${lowStockItems.length > 0 ? `${lowStockItems[0].item_name} (${lowStockItems[0].stock_qty} units left)` : 'All items well stocked'}
+- Total Items in Inventory: ${inventory.length} items
+- Total Active Customers: ${customers.length} customers
+- Customers with Credit: ${customers.filter(c => c.credit_balance > 0).length}
+- Total Sales Transactions: ${sales.length}
+- Average Sale Value: ₹${sales.length > 0 ? (totalRevenue / sales.length).toFixed(2) : 0}
+- Profit Margin: ${totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(2) : 0}%
 
 IMPORTANT LANGUAGE INSTRUCTIONS:
 - User's preferred language: ${language === 'hi' ? 'Hindi (हिंदी)' : language === 'te' ? 'Telugu (తెలుగు)' : 'English'}
@@ -188,23 +248,56 @@ ${topItems.map(([name, data], i) => {
 📦 INVENTORY STATUS:
 - Total Items: ${inventory.length}
 - Low Stock Items: ${lowStockItems.length}
-${lowStockItems.length > 0 ? `- Critical: ${lowStockItems.map(i => `${i.item_name} (${i.stock_qty} left)`).join(', ')}` : ''}
+
+COMPLETE INVENTORY DETAILS (ALL ${inventory.length} Items):
+${inventory.map((item, i) => {
+    return `${i + 1}. ${item.item_name}:
+   - Stock Quantity: ${item.stock_qty} units
+   - Price per Unit: ₹${item.price_per_unit}
+   - Cost per Unit: ₹${item.cost_per_unit || 0}
+   - Category: ${item.category || 'N/A'}
+   - Status: ${item.stock_qty <= (item.reorder_level || 10) ? '⚠️ LOW STOCK' : '✅ Good'}`;
+}).join('\n')}
 
 👥 CUSTOMERS:
 - Total Customers: ${customers.length}
-- Recent Customers: ${customers.slice(0, 5).map(c => c.name || c.phone).join(', ')}
 
-💰 RECENT SALES (Last 5):
-${sales.slice(0, 5).map((s, i) => {
+COMPLETE CUSTOMER DETAILS (ALL ${customers.length} Customers):
+${customers.map((c, i) => {
+    return `${i + 1}. ${c.name || 'No Name'}:
+   - Phone: ${c.phone || 'N/A'}
+   - Email: ${c.email || 'N/A'}
+   - Credit Balance: ₹${c.credit_balance || 0}`;
+}).join('\n')}
+
+💰 ALL SALES (${sales.length} total, showing most recent ${Math.min(sales.length, 50)}):
+${sales.slice(0, 50).map((s, i) => {
     const date = new Date(s.createdAt).toLocaleDateString('en-IN');
-    return `${i + 1}. ₹${s.total_amount.toLocaleString('en-IN')} on ${date} - ${s.items.map(item => item.item_name).join(', ')}`;
+    const customerInfo = s.customer_name ? `Customer: ${s.customer_name}${s.customer_phone ? ` (${s.customer_phone})` : ''}` : 'Walk-in Customer';
+    return `${i + 1}. ₹${s.total_amount.toLocaleString('en-IN')} on ${date}
+   - ${customerInfo}
+   - Items: ${s.items.map(item => `${item.item_name} (${item.quantity})`).join(', ')}
+   - Payment: ${s.payment_method}
+   - Gross Profit: ₹${s.gross_profit || 0}`;
 }).join('\n')}
 
-💸 RECENT EXPENSES (Last 5):
-${expenses.slice(0, 5).map((e, i) => {
+💸 ALL EXPENSES (${expenses.length} total, showing most recent ${Math.min(expenses.length, 30)}):
+${expenses.slice(0, 30).map((e, i) => {
     const date = new Date(e.date).toLocaleDateString('en-IN');
-    return `${i + 1}. ${e.category}: ₹${e.amount.toLocaleString('en-IN')} on ${date}`;
+    return `${i + 1}. ${e.category}: ₹${e.amount.toLocaleString('en-IN')} on ${date}${e.description ? ` - ${e.description}` : ''}`;
 }).join('\n')}
+
+💳 PAYMENT METHOD BREAKDOWN:
+${Object.keys(paymentBreakdown).length > 0 ? Object.entries(paymentBreakdown).map(([method, data]) => {
+    return `- ${method}: ${data.count} transactions, Total: ₹${data.total.toLocaleString('en-IN')}`;
+}).join('\n') : 'No payment data available'}
+
+📊 EXPENSE CATEGORY BREAKDOWN:
+${Object.keys(expenseCategories).length > 0 ? Object.entries(expenseCategories)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([category, data]) => {
+    return `- ${category}: ${data.count} expenses, Total: ₹${data.total.toLocaleString('en-IN')}`;
+}).join('\n') : 'No expense categories available'}
 
 USER QUESTION: ${message}
 
@@ -216,22 +309,92 @@ IMPORTANT ANSWERING GUIDELINES:
 5. Always provide exact numbers from the data above
 6. Use Indian Rupee format (₹) for all amounts
 7. Be concise but complete in your answers
-8. **IMPORTANT: When asked about specific items (like "iPhone", "Samsung", etc.):**
-   - Use the DETAILED ITEM-LEVEL SALES & PROFIT data above
-   - It contains quantity, revenue, COGS, and profit for EACH item
-   - Don't say you need COGS - IT'S ALREADY THERE in the item-level data
-   - Example: "iPhones dwara entha laabham?" → Look at iPhone's profit in the item list
-9. **For TODAY'S item queries:** Use the "TODAY'S ITEM-WISE SALES & PROFIT" section
-10. **For OVERALL item queries:** Use the "DETAILED ITEM-LEVEL SALES & PROFIT" section
 
-Answer the question naturally and conversationally using the exact data provided above.
+8. **INVENTORY QUERIES:**
+   - COMPLETE INVENTORY DETAILS section has EVERY item with stock quantities
+   - When asked about stock/inventory, list the items with their stock_qty
+   - Example: "What stock do we have?" → List all items from COMPLETE INVENTORY DETAILS
+
+9. **CUSTOMER QUERIES:**
+   - COMPLETE CUSTOMER DETAILS section has ALL customer info including phone numbers
+   - When asked about customer contact, provide the phone number from this section
+   - Example: "What is Satwik's phone?" → Look in COMPLETE CUSTOMER DETAILS for Satwik's phone
+
+10. **SALES QUERIES:**
+   - RECENT SALES section shows customer name and phone for each sale
+   - Use this to connect sales to customers
+   - Example: "Who bought books?" → Check RECENT SALES for the customer name
+
+11. **ITEM PROFIT QUERIES:**
+   - Use the DETAILED ITEM-LEVEL SALES & PROFIT data
+   - It contains quantity, revenue, COGS, and profit for EACH item
+   - Example: "iPhones dwara entha laabham?" → Look at iPhone's profit in the item list
+
+12. **TODAY'S vs OVERALL:**
+   - For TODAY'S queries: Use "TODAY'S ITEM-WISE SALES & PROFIT" section
+   - For OVERALL queries: Use "DETAILED ITEM-LEVEL SALES & PROFIT" section
+
+13. **SPECIFIC ITEM QUERIES:**
+   - "How much [item] do we have?" → Check COMPLETE INVENTORY DETAILS for stock_qty
+   - "What's the price of [item]?" → Check COMPLETE INVENTORY DETAILS for price_per_unit
+   - "How many [item] sold?" → Check DETAILED ITEM-LEVEL SALES & PROFIT for quantity
+
+14. **CUSTOMER-SPECIFIC QUERIES:**
+   - "Who is [customer]?" → Check COMPLETE CUSTOMER DETAILS for all info
+   - "What did [customer] buy?" → Check ALL SALES for that customer_name
+   - "Does [customer] owe money?" → Check credit_balance in COMPLETE CUSTOMER DETAILS
+
+15. **DATE/TIME QUERIES:**
+   - Today = ${currentDate}
+   - "This week" = Last 7 days from today
+   - "This month" = Current month data from THIS MONTH section
+   - "Yesterday" = 1 day before today
+
+16. **COMPARISON QUERIES:**
+   - "What's selling most?" → Use DETAILED ITEM-LEVEL SALES sorted by revenue/quantity
+   - "Who spends most?" → Analyze ALL SALES by customer_name and sum amounts
+   - "Most expensive expense?" → Check ALL EXPENSES for highest amount
+
+17. **TREND & ANALYSIS QUERIES:**
+   - Use the financial data to calculate averages, totals, percentages
+   - Compare today vs overall, this month vs overall
+   - Identify patterns from the sales and expense data
+
+18. **GENERAL RULES:**
+   - ALWAYS use exact numbers from the data - never estimate or guess
+   - If data shows 0, say exactly that - don't make up numbers
+   - For any query, there IS data above - search carefully
+   - Reference specific customer names, item names, amounts from the lists
+   - Be helpful and precise
+
+Answer the question naturally and conversationally using the EXACT data provided above. 
+DO NOT say you don't have access to information - ALL the data you need is provided above.
+Search through ALL sections (inventory, customers, sales, expenses) to find the answer.
 `;
 
-            // Generate AI response
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-            const result = await model.generateContent(businessContext);
-            const response = await result.response;
-            const aiResponse = response.text();
+            // Generate AI response with retry logic
+            let aiResponse;
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            while (attempts < maxAttempts) {
+                try {
+                    attempts++;
+                    // Use gemini-2.0-flash (the working model)
+                    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+                    const result = await model.generateContent(businessContext);
+                    const response = await result.response;
+                    aiResponse = response.text();
+                    break; // Success, exit retry loop
+                } catch (retryError) {
+                    if (retryError.status === 503 && attempts < maxAttempts) {
+                        console.log(`⚠️ Gemini overloaded, retrying (${attempts}/${maxAttempts})...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Exponential backoff
+                    } else {
+                        throw retryError; // Give up after max attempts
+                    }
+                }
+            }
 
             console.log('✅ Chatbot response generated successfully');
 
@@ -246,9 +409,18 @@ Answer the question naturally and conversationally using the exact data provided
 
         } catch (error) {
             console.error('❌ Chatbot Error:', error);
+            
+            // Provide user-friendly error messages
+            let errorMessage = 'Failed to process your question. Please try again.';
+            if (error.status === 503) {
+                errorMessage = 'AI service is currently busy. Please wait a moment and try again.';
+            } else if (error.status === 429) {
+                errorMessage = 'Too many requests. Please wait a few seconds and try again.';
+            }
+            
             return res.status(500).json({
                 success: false,
-                message: 'Failed to process your question. Please try again.',
+                message: errorMessage,
                 error: error.message
             });
         }
@@ -274,6 +446,64 @@ Answer the question naturally and conversationally using the exact data provided
             return res.status(500).json({
                 success: false,
                 message: error.message
+            });
+        }
+    }
+
+    /**
+     * Text-to-Speech endpoint
+     */
+    async textToSpeech(req, res) {
+        try {
+            const { text, language = 'en' } = req.body;
+
+            if (!text || text.trim() === '') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Text is required'
+                });
+            }
+
+            // Validate language
+            const supportedLanguages = ['en', 'hi', 'te'];
+            if (!supportedLanguages.includes(language)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Language '${language}' not supported. Use: ${supportedLanguages.join(', ')}`
+                });
+            }
+
+            console.log(`🔊 TTS Request [${language}]: "${text.substring(0, 50)}..."`);
+
+            // Check if TTS service is available
+            if (!ttsService.isAvailable()) {
+                return res.status(503).json({
+                    success: false,
+                    message: 'TTS service not configured',
+                    useBrowserFallback: true
+                });
+            }
+
+            // Generate speech
+            const audioBuffer = await ttsService.synthesizeSpeech(text, language);
+
+            // Set headers for audio streaming
+            res.set({
+                'Content-Type': 'audio/mpeg',
+                'Content-Length': audioBuffer.length,
+                'Cache-Control': 'no-cache'
+            });
+
+            console.log('✅ TTS audio sent successfully');
+            return res.send(audioBuffer);
+
+        } catch (error) {
+            console.error('❌ TTS Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to generate speech',
+                error: error.message,
+                useBrowserFallback: true
             });
         }
     }

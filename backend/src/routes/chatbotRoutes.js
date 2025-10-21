@@ -20,4 +20,9 @@ router.post('/chat', chatbotController.chat);
 // @access  Private
 router.get('/status', chatbotController.getStatus);
 
+// @route   POST /api/chatbot/tts
+// @desc    Convert text to speech
+// @access  Private
+router.post('/tts', chatbotController.textToSpeech);
+
 module.exports = router;

@@ -121,8 +121,14 @@ const FloatingChatbot = () => {
         }
     };
 
-    // Text to Speech
-    const speak = (text) => {
+    // Text to Speech - Use browser TTS for all languages
+    const speak = async (text) => {
+        if (!autoSpeak) return;
+        speakWithBrowser(text);
+    };
+
+    // Browser-based Text to Speech (fallback for all, default for English)
+    const speakWithBrowser = (text) => {
         if (synthesisRef.current && autoSpeak) {
             // Cancel any ongoing speech
             synthesisRef.current.cancel();
@@ -154,22 +160,22 @@ const FloatingChatbot = () => {
                 // Set the voice if found
                 if (voice) {
                     utterance.voice = voice;
-                    console.log(`🔊 Using voice: ${voice.name} (${voice.lang})`);
+                    console.log(`🔊 Using browser voice: ${voice.name} (${voice.lang})`);
                 } else {
                     console.log(`⚠️ No voice found for ${currentLang.speechCode}, using default`);
                 }
 
                 utterance.onstart = () => {
                     setIsSpeaking(true);
-                    console.log('🗣️ Speaking started');
+                    console.log('🗣️ Browser TTS started');
                 };
                 utterance.onend = () => {
                     setIsSpeaking(false);
-                    console.log('✅ Speaking ended');
+                    console.log('✅ Browser TTS ended');
                 };
                 utterance.onerror = (event) => {
                     setIsSpeaking(false);
-                    console.error('❌ Speech error:', event.error);
+                    console.error('❌ Browser TTS error:', event.error);
                 };
 
                 synthesisRef.current.speak(utterance);
@@ -194,8 +200,8 @@ const FloatingChatbot = () => {
     const stopSpeaking = () => {
         if (synthesisRef.current) {
             synthesisRef.current.cancel();
-            setIsSpeaking(false);
         }
+        setIsSpeaking(false);
     };
 
     // Send message
