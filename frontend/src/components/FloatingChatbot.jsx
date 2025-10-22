@@ -22,6 +22,7 @@ const FloatingChatbot = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [language, setLanguage] = useState('en'); // en, hi, te
     const [autoSpeak, setAutoSpeak] = useState(true);
+    const [pendingConfirmation, setPendingConfirmation] = useState(null);
     
     const messagesEndRef = useRef(null);
     const recognitionRef = useRef(null);
@@ -204,6 +205,53 @@ const FloatingChatbot = () => {
         setIsSpeaking(false);
     };
 
+    // Handle confirmation response
+    const handleConfirmation = async (confirmed) => {
+        if (!pendingConfirmation) return;
+
+        setIsLoading(true);
+
+        try {
+            const response = await api.post('/conversational/execute', {
+                confirmationId: pendingConfirmation.confirmationId,
+                confirmed: confirmed,
+                language: language
+            });
+
+            if (response.data.success) {
+                const botMessage = {
+                    type: 'bot',
+                    content: response.data.message,
+                    timestamp: new Date(),
+                    isSuccess: response.data.executed
+                };
+
+                setMessages(prev => [...prev, botMessage]);
+
+                // Speak the response
+                if (autoSpeak) {
+                    speak(response.data.message);
+                }
+            }
+        } catch (error) {
+            console.error('Confirmation error:', error);
+            const errorMessages = {
+                en: "Sorry, something went wrong. Please try again.",
+                hi: "क्षमा करें, कुछ गलत हो गया। कृपया पुन: प्रयास करें।",
+                te: "క్షమించండి, ఏదో తప్పు జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి."
+            };
+
+            setMessages(prev => [...prev, {
+                type: 'bot',
+                content: errorMessages[language],
+                timestamp: new Date()
+            }]);
+        } finally {
+            setPendingConfirmation(null);
+            setIsLoading(false);
+        }
+    };
+
     // Send message
     const sendMessage = async () => {
         if (!inputMessage.trim() || isLoading) return;
@@ -215,27 +263,55 @@ const FloatingChatbot = () => {
         };
 
         setMessages(prev => [...prev, userMessage]);
+        const currentMessage = inputMessage;
         setInputMessage('');
         setIsLoading(true);
 
         try {
-            const response = await api.post('/chatbot/chat', {
-                message: inputMessage,
+            // First, try to parse as an action
+            const parseResponse = await api.post('/conversational/parse', {
+                message: currentMessage,
                 language: language
             });
 
-            if (response.data.success) {
-                const botMessage = {
+            if (parseResponse.data.success && parseResponse.data.data.isAction) {
+                // It's an action - show confirmation
+                const actionData = parseResponse.data.data;
+                
+                const confirmationMessage = {
                     type: 'bot',
-                    content: response.data.data.message,
-                    timestamp: new Date()
+                    content: actionData.confirmationMessage,
+                    timestamp: new Date(),
+                    isConfirmation: true
                 };
 
-                setMessages(prev => [...prev, botMessage]);
+                setMessages(prev => [...prev, confirmationMessage]);
+                setPendingConfirmation(actionData);
 
-                // Speak the response
+                // Speak the confirmation
                 if (autoSpeak) {
-                    speak(response.data.data.message);
+                    speak(actionData.confirmationMessage);
+                }
+            } else {
+                // It's a question - use regular chatbot
+                const response = await api.post('/chatbot/chat', {
+                    message: currentMessage,
+                    language: language
+                });
+
+                if (response.data.success) {
+                    const botMessage = {
+                        type: 'bot',
+                        content: response.data.data.message,
+                        timestamp: new Date()
+                    };
+
+                    setMessages(prev => [...prev, botMessage]);
+
+                    // Speak the response
+                    if (autoSpeak) {
+                        speak(response.data.data.message);
+                    }
                 }
             }
         } catch (error) {
@@ -353,6 +429,10 @@ const FloatingChatbot = () => {
                                     className={`max-w-[80%] rounded-2xl px-4 py-2 ${
                                         message.type === 'user'
                                             ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                                            : message.isSuccess
+                                            ? 'bg-green-50 border border-green-300 text-green-900'
+                                            : message.isConfirmation
+                                            ? 'bg-yellow-50 border border-yellow-300 text-yellow-900'
                                             : 'bg-white border border-gray-200 text-gray-800'
                                     }`}
                                 >
@@ -394,6 +474,28 @@ const FloatingChatbot = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
+                    {/* Confirmation Buttons */}
+                    {pendingConfirmation && (
+                        <div className="p-3 border-t border-yellow-200 bg-yellow-50">
+                            <div className="flex items-center justify-center space-x-3">
+                                <button
+                                    onClick={() => handleConfirmation(true)}
+                                    disabled={isLoading}
+                                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
+                                >
+                                    {language === 'hi' ? '✅ हां' : language === 'te' ? '✅ అవును' : '✅ Yes'}
+                                </button>
+                                <button
+                                    onClick={() => handleConfirmation(false)}
+                                    disabled={isLoading}
+                                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 font-medium"
+                                >
+                                    {language === 'hi' ? '❌ नहीं' : language === 'te' ? '❌ కాదు' : '❌ No'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Input */}
                     <div className="p-4 border-t border-gray-200 bg-white">
                         <div className="flex items-center space-x-2">
@@ -426,8 +528,9 @@ const FloatingChatbot = () => {
 
                             <button
                                 onClick={sendMessage}
-                                disabled={isLoading || !inputMessage.trim() || isListening}
+                                disabled={isLoading || !inputMessage.trim() || isListening || pendingConfirmation}
                                 className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-2 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={pendingConfirmation ? 'Please confirm or cancel the pending action first' : 'Send message'}
                             >
                                 <Send className="h-5 w-5" />
                             </button>

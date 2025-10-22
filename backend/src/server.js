@@ -24,6 +24,7 @@ const aiRoutes = require('./routes/aiRoutes');
 const aiRoutesAdvanced = require('./routes/aiRoutesAdvanced');
 const aiInsightsRoutes = require('./routes/aiInsightsRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
+const conversationalActionRoutes = require('./routes/conversationalActionRoutes');
 const messagesRoutes = require('./routes/messagesRoutes');
 const profitAnalyticsRoutes = require('./routes/profitAnalyticsRoutes');
 
@@ -85,6 +86,7 @@ app.use('/api/ai', aiRoutesAdvanced); // Advanced AI with OpenAI, ElevenLabs, De
 app.use('/api/ai-basic', aiRoutes); // Fallback basic AI routes
 app.use('/api/ai-insights', aiInsightsRoutes);
 app.use('/api/chatbot', chatbotRoutes); // AI Chatbot with multilingual voice support
+app.use('/api/conversational', conversationalActionRoutes); // Phase 7: Conversational DB actions with confirmation
 app.use('/api/messages', messagesRoutes);
 app.use('/api/profit-analytics', profitAnalyticsRoutes);
 
