@@ -27,6 +27,9 @@ const chatbotRoutes = require('./routes/chatbotRoutes');
 const conversationalActionRoutes = require('./routes/conversationalActionRoutes');
 const messagesRoutes = require('./routes/messagesRoutes');
 const profitAnalyticsRoutes = require('./routes/profitAnalyticsRoutes');
+const customerAuthRoutes = require('./routes/customerAuthRoutes');
+const customerRequestRoutes = require('./routes/customerRequestRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Initialize Express app
 const app = express();
@@ -89,6 +92,9 @@ app.use('/api/chatbot', chatbotRoutes); // AI Chatbot with multilingual voice su
 app.use('/api/conversational', conversationalActionRoutes); // Phase 7: Conversational DB actions with confirmation
 app.use('/api/messages', messagesRoutes);
 app.use('/api/profit-analytics', profitAnalyticsRoutes);
+app.use('/api/customer-auth', customerAuthRoutes); // Customer user authentication
+app.use('/api/customer-requests', customerRequestRoutes); // Customer-to-retailer messaging
+app.use('/api/notifications', notificationRoutes); // User notifications
 
 // Root endpoint
 app.get('/', (req, res) => {

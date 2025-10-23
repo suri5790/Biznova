@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, Bell, Search, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 
 /**
  * Header Component
@@ -45,7 +46,7 @@ const Header = ({ onMenuClick }) => {
           {/* Right section - Notifications and Profile */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            
+            <NotificationBell />
 
             {/* Profile dropdown */}
             <div className="relative">

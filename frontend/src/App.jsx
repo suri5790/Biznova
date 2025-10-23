@@ -11,8 +11,10 @@ import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Analytics from './pages/Analytics';
 import AIInsights from './pages/AIInsights';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import LoginNew from './pages/LoginNew';
+import RegisterNew from './pages/RegisterNew';
+import CustomerDashboard from './pages/CustomerDashboard';
+import CustomerRequestsPage from './pages/CustomerRequestsPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -80,10 +82,13 @@ function App() {
           />
           <Routes>
             {/* Public routes */}
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/login" element={<LoginNew />} />
+            <Route path="/register" element={<RegisterNew />} />
 
-            {/* Protected routes with layout */}
+            {/* Customer Dashboard (separate from retailer) */}
+            <Route path="/customer-dashboard" element={<CustomerDashboard />} />
+
+            {/* Protected retailer routes with layout */}
             <Route path="/" element={
               <ProtectedRoute>
                 <>
@@ -97,6 +102,7 @@ function App() {
               <Route path="expenses" element={<Expenses />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="customer-requests" element={<CustomerRequestsPage />} />
               <Route path="ai" element={<AIInsights />} />
               <Route path="analytics" element={<Analytics />} />
             </Route>

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const CustomerUser = require('../models/CustomerUser');
 
 /**
  * JWT Authentication Middleware
@@ -26,8 +27,14 @@ const authenticateToken = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_here');
     
-    // Find user by ID from token
-    const user = await User.findById(decoded.userId).select('-password');
+    // Try to find user in both User (retailer) and CustomerUser models
+    let user = await User.findById(decoded.userId).select('-password');
+    let userType = 'retailer';
+    
+    if (!user) {
+      user = await CustomerUser.findById(decoded.userId).select('-password');
+      userType = 'customer';
+    }
     
     if (!user) {
       return res.status(401).json({
@@ -37,8 +44,9 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Add user to request object
+    // Add user and userType to request object
     req.user = user;
+    req.userType = userType;
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

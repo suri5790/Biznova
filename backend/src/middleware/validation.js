@@ -212,6 +212,97 @@ const validateMessage = [
     .withMessage('Message content cannot exceed 1000 characters')
 ];
 
+// Customer user registration validation
+const validateCustomerRegistration = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
+  
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email'),
+  
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
+  
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .matches(/^[6-9]\d{9}$/)
+    .withMessage('Please enter a valid Indian phone number'),
+  
+  body('address.street')
+    .optional()
+    .trim(),
+  
+  body('address.city')
+    .optional()
+    .trim(),
+  
+  body('address.state')
+    .optional()
+    .trim(),
+  
+  body('address.pincode')
+    .optional()
+    .matches(/^\d{6}$/)
+    .withMessage('Please enter a valid 6-digit pincode')
+];
+
+// Customer user login validation
+const validateCustomerLogin = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email'),
+  
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+];
+
+// Customer request validation
+const validateCustomerRequest = [
+  body('retailer_id')
+    .notEmpty()
+    .withMessage('Retailer ID is required')
+    .isMongoId()
+    .withMessage('Invalid retailer ID'),
+  
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('At least one item is required'),
+  
+  body('items.*.item_name')
+    .trim()
+    .notEmpty()
+    .withMessage('Item name is required')
+    .isLength({ max: 100 })
+    .withMessage('Item name cannot exceed 100 characters'),
+  
+  body('items.*.quantity')
+    .isNumeric()
+    .withMessage('Quantity must be a number')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be at least 1'),
+  
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Notes cannot exceed 500 characters')
+];
+
 module.exports = {
   validateRegistration,
   validateLogin,
@@ -221,5 +312,8 @@ module.exports = {
   validateExpense,
   validateInventory,
   validateAiInsight,
-  validateMessage
+  validateMessage,
+  validateCustomerRegistration,
+  validateCustomerLogin,
+  validateCustomerRequest
 };

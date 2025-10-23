@@ -7,7 +7,8 @@ import {
   Package, 
   Users, 
   Brain, 
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react';
 
 /**
@@ -21,6 +22,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Expenses', href: '/expenses', icon: Receipt },
     { name: 'Inventory', href: '/inventory', icon: Package },
     { name: 'Customers', href: '/customers', icon: Users },
+    { name: 'Customer Requests', href: '/customer-requests', icon: MessageSquare },
     { name: 'AI Insights', href: '/ai', icon: Brain },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ];
